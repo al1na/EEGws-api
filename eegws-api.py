@@ -14,29 +14,40 @@ app = Flask(__name__)
 
 
 rec1 = {
-        'timestamp': 1428262635,
+        'timestamp': [1428262635, 1428262636, 1428262637, 1428262638, 1428262639],
         'device': 'emotiv',
         'electrodes': {'AF3': [10, 20, 33, 12, 56],
-                        'O1': [12, 57, 88, 32, 15],
-                        'P7': [22, 47, 78, 62, 35]},
+                       'O1': [12, 57, 88, 32, 15],
+                       'P7': [22, 47, 78, 62, 35]},
+        'quality': {'AF3': [100, 90, 90, 90, 90],
+                    'O1': [92, 76, 88, 78, 90],
+                    'P7': [100, 90, 93, 90, 90]},
         'gyroscope': {'gyroX': [-100, 0, 150, 190, 200], 'gyroY': [-150, -90, 0, 80, 120]},
         'auxdata': {'battery': 100},
-        'annotation': u'Blinking experiment 05-04-2015'
+        'annotation': u'Blinking experiment 05-04-2015',
+        'userid': 'd8f9419e-dbc2-11e4-b9d6-1681e6b88ec1',
+        'good': True
         }
 
 rec2 = {
-        'timestamp': 1428265342,
+        'timestamp': [1428265342, 1428265343, 1428265344, 1428265345, 1428265346],
         'device': 'emotiv',
-        'electrodes': {'AF3': [10, 20, 33, 100, 100],
-                        'O1': [12, 57, 88, 100, 100],
-                        'P7': [22, 47, 78, 100, 100]},
+        'frequency': 128,
+        'electrodes': {'AF3': [90, 90, 96, 100, 100],
+                       'O1': [100, 90, 90, 90, 90],
+                       'P7': [100, 90, 90, 90, 90]},
+        'quality': {'AF3': [10, 20, 33, 100, 100],
+                    'O1': [12, 57, 88, 100, 100],
+                    'P7': [22, 47, 78, 100, 100]},
         'gyroscope': {'gyroX': [-100, 0, 150, 100, 100], 'gyroY': [-150, -90, 0, 100, 100]},
         'auxdata': {'battery': 100},
-        'annotation': u'2nd blinking experiment 05-04-2015'
+        'annotation': u'2nd blinking experiment 05-04-2015',
+        'good': True,
+        'userid': 'd8f9419e-dbc2-11e4-b9d6-1681e6b88ec1'
         }
 
 user1 = {
-        'id': 'd8f9419e-dbc2-11e4-b9d6-1681e6b88ec1',
+        'userid': 'd8f9419e-dbc2-11e4-b9d6-1681e6b88ec1',
         'username': 'al1na',
         'password': 'python',
         'birthyear': 1900,
