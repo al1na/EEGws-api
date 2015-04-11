@@ -16,6 +16,7 @@ app = Flask(__name__)
 rec = {
         'timestamp': [1428262635, 1428262636, 1428262637, 1428262638, 1428262639],
         'device': 'emotiv',
+        'frequency': 128,
         'electrodes': {'AF3': [10, 20, 33, 12, 56],
                        'O1': [12, 57, 88, 32, 15],
                        'P7': [22, 47, 78, 62, 35]},
@@ -117,6 +118,15 @@ def create_user():
     users_collection.insert(user)
     user.pop('_id')
     return jsonify({'user': user}), 201
+
+
+@app.route('/mobileeg/api/v1/users/<string:username>', methods=['GET'])
+@auth.login_required
+def get_user(username):
+    user = [user for user in users_collection if users_collection['username'] == username]
+    if len(user) == 0:
+        abort(404)
+    return jsonify({'user': user[0]})
 
 """
 @app.route('/mobileeg/api/v1/recordings/<int:recording_id>', methods=['DELETE'])
