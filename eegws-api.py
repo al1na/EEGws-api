@@ -13,7 +13,7 @@ users_collection = db.users
 app = Flask(__name__)
 
 
-rec = {
+rec1 = {
         'timestamp': [1428262635, 1428262636, 1428262637, 1428262638, 1428262639],
         'device': 'emotiv',
         'frequency': 128,
@@ -30,7 +30,7 @@ rec = {
         'good': True
         }
 
-user = {
+user1 = {
         'userid': 'd8f9419e-dbc2-11e4-b9d6-1681e6b88ec1',
         'username': 'al1na',
         'password': 'python',
@@ -40,8 +40,8 @@ user = {
         'public': True
         }
 
-#recordings_collection.insert(rec)
-#users_collection.insert(user)
+#recordings_collection.insert(rec1)
+#users_collection.insert(user1)
 
 
 @auth.get_password
@@ -99,11 +99,12 @@ def get_users():
     for user in users_collection.find():
         user.pop('_id')
         users_list.append(user)
-    return jsonify({'recordings': users_list})
+    return jsonify({'users': users_list})
 
 
 @app.route('/mobileeg/api/v1/users', methods=['POST'])
 def create_user():
+    #TODO: to perform some checks e.g. the userid must be unique
     if not request.json:
         abort(400)
     user = {
@@ -123,29 +124,40 @@ def create_user():
 @app.route('/mobileeg/api/v1/users/<string:username>', methods=['GET'])
 @auth.login_required
 def get_user(username):
-    user = [user for user in users_collection if users_collection['username'] == username]
-    if len(user) == 0:
+    #TODO: to remove the _id before returning the user to the client
+    user = users_collection.find({"username": username})
+    if user.count() == 0:
         abort(404)
-    return jsonify({'user': user[0]})
+    return Response(json_util.dumps({'user': user[0]}), mimetype='application/json')
 
-"""
-@app.route('/mobileeg/api/v1/recordings/<int:recording_id>', methods=['DELETE'])
-def delete_recording(recording_id):
-    recording = [recording for recording in recordings_collection if recording['id'] == recording_id]
-    if len(recording) == 0:
-        abort(404)
-    recordings_collection.remove(recording[0])
-    return jsonify({'result': True})
-
-
-@app.route('/mobileeg/api/v1/recordings/<int:recording_id>', methods=['GET'])
+'''
+@app.route('/mobileeg/api/v1/users', methods=['PUT'])
 @auth.login_required
-def get_recording(recording_id):
-    recording = [recording for recording in recordings_collection if recordings_collection['id'] == recording_id]
-    if len(recording) == 0:
-        abort(404)
-    return jsonify({'recording': recording[0]})
-"""
+def update_user():
+    #TODO: to actually update the user details
+    user = users_collection.find({"username": auth.username()})
+    if not request.json:
+        abort(400)
+    if 'username' in request.json and type(request.json['username']) is not unicode:
+        abort(400)
+    if 'password' in request.json and type(request.json['password']) is not unicode:
+        abort(400)
+    if 'organization' in request.json and type(request.json['organization']) is not unicode:
+        abort(400)
+    if 'gender' in request.json and type(request.json['gender']) not in ['F', 'M', 'f', 'm']:
+        abort(400)
+    if 'birthyear' in request.json and type(request.json['birthyear']) is not int:
+        abort(400)
+    if 'public' in request.json and type(request.json['public']) is not bool:
+        abort(400)
+    user[0]['username'] = request.json.get('username', user[0]['username'])
+    user[0]['password'] = request.json.get('password', user[0]['password'])
+    user[0]['organization'] = request.json.get('organization', user[0]['organization'])
+    user[0]['gender'] = request.json.get('gender', user[0]['gender'])
+    user[0]['birthyear'] = request.json.get('birthyear', user[0]['birthyear'])
+    user[0]['public'] = request.json.get('public', user[0]['public'])
+    return Response(json_util.dumps({'user': user[0]}), mimetype='application/json')
+'''
 
 
 @app.errorhandler(400)
