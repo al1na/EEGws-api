@@ -95,18 +95,27 @@ def get_recording(recording_id):
 @app.route('/mobileeg/api/v1/recordings', methods=['POST'])
 @auth.login_required
 def create_task():
+    global userid
     if not request.json:
         abort(400)
+    user = users_collection.find({"username": auth.username()})
+    for u in user:
+        userid = u.get('userid')
     rec = {
             'timestamp': request.json['timestamp'],
             'device': request.json['device'],
+            'frequency': request.json['frequency'],
             'electrodes': request.json['electrodes'],
+            'quality': request.json['quality'],
             'gyroscope': request.json['gyroscope'],
             'auxdata': request.json['auxdata'],
-            'annotation': request.json['annotation']
+            'annotation': request.json['annotation'],
+            'good': True,
+            'userid': userid
             }
     recordings_collection.insert(rec)
     rec.pop('_id')
+    print rec
     return jsonify({'recording':rec}), 201
 
 
