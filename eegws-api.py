@@ -185,6 +185,16 @@ def get_user_recordings(username):
     return jsonify({'user recordings': user_recordings})
 
 
+@app.route('/mobileeg/api/v1/recordings?annotation={<string:annotation>}', methods=['GET'])
+@auth.login_required
+def get_annotated_recordings(annotation):
+    #TODO: To look into why this is providing ALL recordings
+    annotated_recordings = []
+    for recording in recordings_collection.find({"annotation": annotation}, {"_id": 0}):
+        annotated_recordings.append(recording)
+    return jsonify({'recordings': annotated_recordings})
+
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
