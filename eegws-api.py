@@ -1,6 +1,8 @@
-from flask import Flask, Response, jsonify, request, abort, make_response
+from flask import Flask, Response, jsonify, request, abort, make_response, redirect, url_for, send_from_directory
 from flask.ext.httpauth import HTTPBasicAuth
 from bson import json_util
+import os
+from werkzeug import secure_filename
 from pymongo import MongoClient
 
 auth = HTTPBasicAuth()
@@ -10,7 +12,11 @@ db = client.testeegdb
 recordings_collection = db.recordings
 users_collection = db.users
 
+UPLOAD_FOLDER = 'uploaded_recordings'
+ALLOWED_EXTENSIONS = set(['bz2'])
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 
 
 rec1 = {
@@ -164,6 +170,40 @@ def update_user():
         {'$set': {'public': request.json.get('public', user[0]['public'])}})
     user = users_collection.find({"username": auth.username()}, {"_id": 0})
     return Response(json_util.dumps({'user': user[0]}), mimetype='application/json')
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+
+@app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
+@auth.login_required
+def handle_uploaded_file():
+    print "I am here"
+    print len(request.files)
+    for x in request.files:
+        print x
+    file_received = request.files['file']
+    if file_received and allowed_file(file_received.filename):
+            filename = secure_filename(file_received.filename)
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            x = file_received.save(filepath)
+            # url_for looks for a function, you pass it the name of the function you are wanting to call
+            # http://stackoverflow.com/questions/3683108/flask-error-werkzeug-routing-builderror
+            print filepath
+            print "compressed " + str(os.path.getsize(filepath))
+            decompressedfile = bz2.decompress(filepath)
+            print "compressed " + str(os.path.getsize(filepath)) + \
+                  " decompressed " + str(os.path.getsize(decompressedfile))
+            return redirect(url_for('get_recordings',
+                                    filename=filename))
+
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'],
+                               filename)
 
 
 @app.errorhandler(400)
