@@ -5,6 +5,7 @@ from werkzeug import secure_filename
 from pymongo import MongoClient
 import os
 import bz2
+import json
 
 auth = HTTPBasicAuth()
 
@@ -186,10 +187,36 @@ def handle_uploaded_file():
             filename = secure_filename(file_received.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file_received.save(filepath)
+            print str(os.path.getsize(filepath))
+            #decompressed_file = decompress_file_bzip(filepath)
+            uncompressedData = bz2.BZ2File(filepath).read()
+            #print uncompressedData
             # url_for looks for a function, you pass it the name of the function you are wanting to call
             # http://stackoverflow.com/questions/3683108/flask-error-werkzeug-routing-builderror
             return redirect(url_for('get_recordings',
                                     filename=filename))
+
+
+def unpack_data(filepath):
+    if os.path.getsize(filepath) > 5 * 1024 * 1024:
+        decompress_file_bzip(filepath)
+    else:
+        uncompressedData = bz2.BZ2File(filepath).read()
+    #  http://stackoverflow.com/questions/23344948/python-validate-and-format-json-files
+    json_data = json.load(uncompressedData)
+    pass
+
+
+def decompress_file_bzip(filepath):
+    """
+    Useful for big files
+    """
+    decompress_file_path = os.path.join(filepath + '.decompressed')
+    with open(decompress_file_path, 'wb') as new_file, open(filepath, 'rb') as file:
+        decompressor = bz2.BZ2Decompressor()
+        for data in iter(lambda: file.read(100 * 1024), b''):
+            new_file.write(decompressor.decompress(data))
+    return decompress_file_path
 
 
 @app.route('/uploads/<filename>')
