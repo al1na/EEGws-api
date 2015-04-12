@@ -180,10 +180,6 @@ def allowed_file(filename):
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
 @auth.login_required
 def handle_uploaded_file():
-    print "I am here"
-    print len(request.files)
-    for x in request.files:
-        print x
     file_received = request.files['file']
     if file_received and allowed_file(file_received.filename):
             filename = secure_filename(file_received.filename)
