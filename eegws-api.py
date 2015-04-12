@@ -198,6 +198,17 @@ def uploaded_file(filename):
                                filename)
 
 
+@app.route('/mobileeg/api/v1/users/<string:username>/recordings', methods=['GET'])
+@auth.login_required
+def get_user_recordings(username):
+    user = users_collection.find({"username": username, "public": True})
+    user_id = user[0]['userid']
+    user_recordings = []
+    for recording in recordings_collection.find({"userid": user_id}, {"_id": 0}):
+        user_recordings.append(recording)
+    return jsonify({'user recordings': user_recordings})
+
+
 @app.errorhandler(400)
 def not_found(error):
     return make_response(jsonify({'error': 'Bad request'}), 400)
