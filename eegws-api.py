@@ -124,40 +124,46 @@ def create_user():
 @app.route('/mobileeg/api/v1/users/<string:username>', methods=['GET'])
 @auth.login_required
 def get_user(username):
-    #TODO: to remove the _id before returning the user to the client
-    user = users_collection.find({"username": username})
+    user = users_collection.find({"username": username}, {"_id": 0})
     if user.count() == 0:
         abort(404)
-    return Response(json_util.dumps({'user': user[0]}), mimetype='application/json')
+    return jsonify({'user': user[0]})
+    #return Response(json_util.dumps({'user': user[0]}), mimetype='application/json')
 
-'''
+
 @app.route('/mobileeg/api/v1/users', methods=['PUT'])
 @auth.login_required
 def update_user():
-    #TODO: to actually update the user details
     user = users_collection.find({"username": auth.username()})
     if not request.json:
-        abort(400)
-    if 'username' in request.json and type(request.json['username']) is not unicode:
         abort(400)
     if 'password' in request.json and type(request.json['password']) is not unicode:
         abort(400)
     if 'organization' in request.json and type(request.json['organization']) is not unicode:
         abort(400)
-    if 'gender' in request.json and type(request.json['gender']) not in ['F', 'M', 'f', 'm']:
+    if 'gender' in request.json and request.json['gender'] not in ['F', 'M', 'f', 'm']:
         abort(400)
     if 'birthyear' in request.json and type(request.json['birthyear']) is not int:
         abort(400)
     if 'public' in request.json and type(request.json['public']) is not bool:
         abort(400)
-    user[0]['username'] = request.json.get('username', user[0]['username'])
-    user[0]['password'] = request.json.get('password', user[0]['password'])
-    user[0]['organization'] = request.json.get('organization', user[0]['organization'])
-    user[0]['gender'] = request.json.get('gender', user[0]['gender'])
-    user[0]['birthyear'] = request.json.get('birthyear', user[0]['birthyear'])
-    user[0]['public'] = request.json.get('public', user[0]['public'])
+    users_collection.update(
+        {"_id": user[0]['_id']},
+        {'$set': {'password': request.json.get('password', user[0]['password'])}})
+    users_collection.update(
+        {"_id": user[0]['_id']},
+        {'$set': {'organization': request.json.get('organization', user[0]['organization'])}})
+    users_collection.update(
+        {"_id": user[0]['_id']},
+        {'$set': {'gender': request.json.get('gender', user[0]['gender'])}})
+    users_collection.update(
+        {"_id": user[0]['_id']},
+        {'$set': {'birthyear': request.json.get('birthyear', user[0]['birthyear'])}})
+    users_collection.update(
+        {"_id": user[0]['_id']},
+        {'$set': {'public': request.json.get('public', user[0]['public'])}})
+    user = users_collection.find({"username": auth.username()}, {"_id": 0})
     return Response(json_util.dumps({'user': user[0]}), mimetype='application/json')
-'''
 
 
 @app.errorhandler(400)
