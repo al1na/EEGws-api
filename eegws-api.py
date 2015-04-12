@@ -1,9 +1,10 @@
 from flask import Flask, Response, jsonify, request, abort, make_response, redirect, url_for, send_from_directory
 from flask.ext.httpauth import HTTPBasicAuth
 from bson import json_util
-import os
 from werkzeug import secure_filename
 from pymongo import MongoClient
+import os
+import bz2
 
 auth = HTTPBasicAuth()
 
@@ -180,22 +181,13 @@ def allowed_file(filename):
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
 @auth.login_required
 def handle_uploaded_file():
-    print "I am here"
-    print len(request.files)
-    for x in request.files:
-        print x
     file_received = request.files['file']
     if file_received and allowed_file(file_received.filename):
             filename = secure_filename(file_received.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            x = file_received.save(filepath)
+            file_received.save(filepath)
             # url_for looks for a function, you pass it the name of the function you are wanting to call
             # http://stackoverflow.com/questions/3683108/flask-error-werkzeug-routing-builderror
-            print filepath
-            print "compressed " + str(os.path.getsize(filepath))
-            decompressedfile = bz2.decompress(filepath)
-            print "compressed " + str(os.path.getsize(filepath)) + \
-                  " decompressed " + str(os.path.getsize(decompressedfile))
             return redirect(url_for('get_recordings',
                                     filename=filename))
 
