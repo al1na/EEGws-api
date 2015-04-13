@@ -67,11 +67,14 @@ def get_password(username):
 def get_recordings():
     #TODO: to provide only the public recordings (check if public=True for the user)
     recordings_list = []
-    for recording in recordings_collection.find():
-        recording.pop('_id')
-        recordings_list.append(recording)
-    return jsonify({'recordings':recordings_list})
-    #return Response(json_util.dumps({'page' : recordings_list}), mimetype='application/json')
+    if request.args.get("annotation"):
+        for recording in recordings_collection.find({"annotation": request.args.get("annotation")}, {"_id": 0}):
+            recordings_list.append(recording)
+    else:
+        for recording in recordings_collection.find():
+            recording.pop('_id')
+            recordings_list.append(recording)
+    return jsonify({'recordings': recordings_list})
 
 
 @app.route('/mobileeg/api/v1/recordings', methods=['POST'])
@@ -183,16 +186,6 @@ def get_user_recordings(username):
     for recording in recordings_collection.find({"userid": user_id}, {"_id": 0}):
         user_recordings.append(recording)
     return jsonify({'user recordings': user_recordings})
-
-
-@app.route('/mobileeg/api/v1/recordings?annotation={<string:annotation>}', methods=['GET'])
-@auth.login_required
-def get_annotated_recordings(annotation):
-    #TODO: To look into why this is providing ALL recordings
-    annotated_recordings = []
-    for recording in recordings_collection.find({"annotation": annotation}, {"_id": 0}):
-        annotated_recordings.append(recording)
-    return jsonify({'recordings': annotated_recordings})
 
 
 def allowed_file(filename):
