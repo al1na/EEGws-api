@@ -183,8 +183,15 @@ def get_user_recordings(username):
     user = users_collection.find({"username": username, "public": True})
     user_id = user[0]['userid']
     user_recordings = []
-    for recording in recordings_collection.find({"userid": user_id}, {"_id": 0}):
-        user_recordings.append(recording)
+    if request.args.get("annotation"):
+        print request.args.get("annotation")
+        for recording in recordings_collection.find({"$and": [{"userid": user_id},
+                                                              {"annotation": request.args.get("annotation")}]},
+                                                    {"_id": 0}):
+            user_recordings.append(recording)
+    else:
+        for recording in recordings_collection.find({"userid": user_id}, {"_id": 0}):
+            user_recordings.append(recording)
     return jsonify({'user recordings': user_recordings})
 
 
