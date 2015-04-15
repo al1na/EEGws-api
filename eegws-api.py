@@ -215,7 +215,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
-@app.route('/mobileeg/api/v1/recordings/timeseriesplot', methods='[GET]')
+@app.route('/mobileeg/api/v1/recordings/timeseriesplot', methods=['GET'])
 @auth.login_required
 def create_timeseries_plot():
     recordings = get_recordings_from_db(request.args.get("annotation"))
