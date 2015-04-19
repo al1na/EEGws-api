@@ -66,7 +66,7 @@ def get_password(username):
     return password
 
 
-def get_recordings_from_db(annotation=None):
+def find_recordings_db(annotation=None):
     recordings_list = []
     if annotation is not None:
         for recording in recordings_collection.find({"annotation": request.args.get("annotation")}, {"_id": 0}):
@@ -76,6 +76,7 @@ def get_recordings_from_db(annotation=None):
             recording.pop('_id')
             recordings_list.append(recording)
     return recordings_list
+
 
 @app.route('/mobileeg/api/v1/recordings', methods=['GET'])
 @auth.login_required
@@ -92,15 +93,19 @@ def get_recordings():
     return jsonify({'recordings': recordings_list})
 
 
+def find_userid_db(username):
+    user = users_collection.find({"username": username})
+    for u in user:
+        userid = u.get('userid')
+    return userid
+
 @app.route('/mobileeg/api/v1/recordings', methods=['POST'])
 @auth.login_required
 def create_recording():
     global userid
     if not request.json:
         abort(400)
-    user = users_collection.find({"username": auth.username()})
-    for u in user:
-        userid = u.get('userid')
+    userid = find_userid_db(auth.username())
     rec = {
             'timestamp': request.json['timestamp'],
             'device': request.json['device'],
@@ -218,7 +223,7 @@ def allowed_file(filename):
 @app.route('/mobileeg/api/v1/recordings/timeseriesplot', methods=['GET'])
 @auth.login_required
 def create_timeseries_plot():
-    recordings = get_recordings_from_db(request.args.get("annotation"))
+    recordings = find_recordings_db(request.args.get("annotation"))
     for rec in recordings:
         plt.figure(figsize=(6, 8))
         for electrode in ELECTRODES:
@@ -228,6 +233,7 @@ def create_timeseries_plot():
         plt.savefig("timeseries1.png", dpi=150)
         return send_from_directory("/", "timeseries.png")
 
+
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
 @auth.login_required
 def handle_uploaded_file():
@@ -236,24 +242,33 @@ def handle_uploaded_file():
             filename = secure_filename(file_received.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file_received.save(filepath)
-            print str(os.path.getsize(filepath))
-            #decompressed_file = decompress_file_bzip(filepath)
-            uncompressedData = bz2.BZ2File(filepath).read()
-            #print uncompressedData
-            # url_for looks for a function, you pass it the name of the function you are wanting to call
-            # http://stackoverflow.com/questions/3683108/flask-error-werkzeug-routing-builderror
-            return redirect(url_for('get_recordings',
-                                    filename=filename))
+            decompressed_data = unpack_data(filepath)
+            json_data = load_data_as_json(decompressed_data)
+            rec = insert_recording(json_data, auth.username())
+            return jsonify(rec), 201
 
 
 def unpack_data(filepath):
     if os.path.getsize(filepath) > 5 * 1024 * 1024:
         decompressed_file = decompress_file_bzip(filepath)
+        decompressed_data = open(decompressed_file, 'r')
     else:
-        decompressedData = bz2.BZ2File(filepath).read()
+        decompressed_data = bz2.BZ2File(filepath).read()
+    return decompressed_data
+
+
+def load_data_as_json(decompressed_data):
     #  http://stackoverflow.com/questions/23344948/python-validate-and-format-json-files
-    json_data = json.load(decompressedData)
-    pass
+    json_data = json.load(decompressed_data)
+    return json_data
+
+
+def insert_recording(rec_json, username):
+    userid = find_userid_db(username)
+    rec_json['userid'] = userid
+    recordings_collection.insert(rec_json)
+    rec_json.pop('_id')
+    return rec_json
 
 
 def decompress_file_bzip(filepath):
