@@ -7,6 +7,7 @@ import os
 import bz2
 import json
 from matplotlib import pyplot as plt
+import pandas as pd
 
 ELECTRODES = ['F7', 'F8', 'AF3', 'AF4', 'FC5', 'FC6', 'F3',
                     'F4', 'T7', 'T8', 'O1', 'O2', 'P7', 'P8']
@@ -213,6 +214,11 @@ def get_user_recordings(username):
         for recording in recordings_collection.find({"userid": user_id}, {"_id": 0}):
             user_recordings.append(recording)
     return jsonify({'user recordings': user_recordings})
+
+
+def convert_recording_to_pandas_df(rec):
+    data = pd.DataFrame({'timestamp': rec['timestamp']})
+    return data
 
 
 def allowed_file(filename):
