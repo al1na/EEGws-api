@@ -12,6 +12,8 @@ import pandas as pd
 ELECTRODES = ['F7', 'F8', 'AF3', 'AF4', 'FC5', 'FC6', 'F3',
                     'F4', 'T7', 'T8', 'O1', 'O2', 'P7', 'P8']
 
+ELECTRODES_2 = ['P7', 'AF3', 'O1']
+
 auth = HTTPBasicAuth()
 
 client = MongoClient()
@@ -216,10 +218,13 @@ def get_user_recordings(username):
     return jsonify({'user recordings': user_recordings})
 
 
-def convert_recording_to_pandas_df(rec):
-    data = pd.DataFrame({'timestamp': rec['timestamp']})
+def convert_recording_to_pandas_dataframe(rec):
+    dict = {'timestamp': rec['timestamp']}
+    for electrode in rec['electrodes'].keys():
+        dict[electrode] = rec['electrodes'][electrode]
+    data = pd.DataFrame(dict)
+    data[['timestamp'] + rec['electrodes'].keys()]
     return data
-
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -232,12 +237,20 @@ def create_timeseries_plot():
     recordings = find_recordings_db(request.args.get("annotation"))
     for rec in recordings:
         plt.figure(figsize=(6, 8))
-        for electrode in ELECTRODES:
-            plt.plot(rec['timestamp'], rec['electrodes'][electrode], 'b-')
-            plt.xlabel("time")
-            plt.ylabel("signal magnitude")
-        plt.savefig("timeseries1.png", dpi=150)
-        return send_from_directory("/", "timeseries.png")
+        print ELECTRODES_2
+        for electrode in ELECTRODES_2:
+            if len(rec['timestamp']) == len(rec['electrodes'][electrode]):
+                plt.plot(rec['timestamp'], rec['electrodes'][electrode], 'b-')
+            #print rec['timestamp']
+            print electrode
+            #print rec
+            print rec['electrodes'][str(electrode)]
+            print rec['timestamp']
+            #print rec['electrodes']
+        plt.xlabel("time")
+        plt.ylabel("signal magnitude")
+        plt.savefig("timeseries2.png", dpi=150)
+        return send_from_directory("/", "timeseries2.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
