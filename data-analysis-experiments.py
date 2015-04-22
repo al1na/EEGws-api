@@ -10,8 +10,11 @@ from pylab import *
 
 # construct signal
 plt.figure(figsize=(6,8))
-t = numpy.linspace(0, 1, 201)  # 200 Hz sampling rate
-y = sin(2*pi*t*50) + randn(len(t))/2  # 50 Hz signal plus noise
+#t = numpy.linspace(0, 1, 201)  # 200 Hz sampling rate
+Fs=200.
+F=50.
+t = [i*1./Fs for i in range(200)]
+y = sin(2*pi*numpy.array(t)*F) + randn(len(t))/2  # 50 Hz signal plus noise
 
 #plot in the time domain
 plt.subplot(211)
@@ -33,10 +36,11 @@ plt.savefig("mlab_signal_50_psd.jpg", dpi=150)
 # compute FFT (Fast Fourier Transform) and plot the magnitude spectrum
 fourier = numpy.fft.fft(y)
 frequencies = numpy.fft.fftfreq(len(t), 0.005)  # where 0.005 is the inter-sample time difference
-positive_frequencies = frequencies[numpy.where(frequencies > 0)]  # only the positive frequencies
-magnitudes = abs(fourier[numpy.where(frequencies > 0)])  # magnitude spectrum
+positive_frequencies = frequencies[numpy.where(frequencies >= 0)]  # only the positive frequencies
+magnitudes = abs(fourier[numpy.where(frequencies >= 0)])  # magnitude spectrum
 plt.subplot(311)
 plt.plot(positive_frequencies, magnitudes, 'g-')
+plt.xticks([10, 20, 30, 40, 50, 60, 70, 80, 90])
 plt.ylabel("POWER")
 plt.xlabel("FREQUENCY (Hz)")
 plt.savefig("signal_magnitude_spectrum.jpg", dpi=150)
