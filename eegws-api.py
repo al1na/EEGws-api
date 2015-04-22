@@ -1,3 +1,9 @@
+import matplotlib
+import os
+import bz2
+import json
+import pandas as pd
+import numpy as np
 from flask import Flask, Response, jsonify, request, abort, make_response, redirect, url_for, send_from_directory
 from flask.ext.httpauth import HTTPBasicAuth
 from bson import json_util
@@ -5,11 +11,8 @@ from bson.objectid import ObjectId
 from werkzeug import secure_filename
 from pymongo import MongoClient
 from pylab import *
-import os
-import bz2
-import json
 from matplotlib import pyplot as plt
-import pandas as pd
+from matplotlib import mlab
 
 ALL_ELECTRODES = ['F7', 'F8', 'AF3', 'AF4', 'FC5', 'FC6', 'F3',
                     'F4', 'T7', 'T8', 'O1', 'O2', 'P7', 'P8']
@@ -25,7 +28,7 @@ users_collection = db.users
 
 UPLOAD_FOLDER = 'uploaded_recordings'
 ALLOWED_EXTENSIONS = set(['bz2'])
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 
@@ -268,22 +271,54 @@ def create_spectrogram(recording_id):
     return send_from_directory("/", "spectrogramP7.png")
 
 
-@app.route('/mobileeg/api/v1/recordings/peakfrequency', methods=['GET'])
+@app.route('/mobileeg/api/v1/recordings/<string:recording_id>/peakfrequency', methods=['GET'])
 @auth.login_required
-def calculate_peak_frequency():
-    pass
+def calculate_peak_frequency(recording_id):
+    electrode = request.args.get("electrode")
+    recording = find_recording_by_id(recording_id)
+    if electrode not in ELECTRODES or recording is None:
+        abort(404)
+    fourier = np.fft.fft(recording['electrodes'][electrode])
+    freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['frequency']))
+    magnitudes = abs(fourier[np.where(freqs >= 0)])
+    peak_frequency = np.argmax(magnitudes)
+    print peak_frequency
+    return str(peak_frequency)
 
 
-@app.route('/mobileeg/api/v1/recordings/powerspectraldensity', methods=['GET'])
+@app.route('/mobileeg/api/v1/recordings/<string:recording_id>/powerspectraldensity', methods=['GET'])
 @auth.login_required
-def calculate_psd():
-    pass
+def calculate_psd(recording_id):
+    electrode = request.args.get("electrode")
+    recording = find_recording_by_id(recording_id)
+    if electrode not in ELECTRODES or recording is None:
+        abort(404)
+    psd = mlab.psd(recording['electrodes'][electrode], Fs=recording['frequency'])
+    plt.figure(figsize=(6, 8))
+    plt.plot(psd[1], psd[0], 'b-')
+    plt.xlabel("FREQUENCY")
+    plt.ylabel("POWER SPECTRAL DENSITY")
+    plt.savefig("psd.png", dpi=150)
+    return send_from_directory("/", "psd.png")
 
 
-@app.route('/mobileeg/api/v1/recordings/magnitudespectrum', methods=['GET'])
+@app.route('/mobileeg/api/v1/recordings/<string:recording_id>/magnitudespectrum', methods=['GET'])
 @auth.login_required
-def plot_magnitude_spectrum():
-    pass
+def plot_magnitude_spectrum(recording_id):
+    electrode = request.args.get("electrode")
+    recording = find_recording_by_id(recording_id)
+    if electrode not in ELECTRODES or recording is None:
+        abort(404)
+    fourier = np.fft.fft(recording['electrodes'][electrode])
+    freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['frequency']))
+    positive_freqs = freqs[np.where(freqs >= 0)]
+    magnitudes = abs(fourier[np.where(freqs >= 0)])
+    plt.figure(figsize=(6, 8))
+    plt.plot(positive_freqs, magnitudes, 'g-')
+    plt.ylabel("POWER")
+    plt.xlabel("FREQUENCY")
+    plt.savefig("magnitude_spectrum.png", dpi=150)
+    return send_from_directory("/", "magnitude_spectrum.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
