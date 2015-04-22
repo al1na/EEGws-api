@@ -1,18 +1,20 @@
 from flask import Flask, Response, jsonify, request, abort, make_response, redirect, url_for, send_from_directory
 from flask.ext.httpauth import HTTPBasicAuth
 from bson import json_util
+from bson.objectid import ObjectId
 from werkzeug import secure_filename
 from pymongo import MongoClient
+from pylab import *
 import os
 import bz2
 import json
 from matplotlib import pyplot as plt
 import pandas as pd
 
-ELECTRODES = ['F7', 'F8', 'AF3', 'AF4', 'FC5', 'FC6', 'F3',
+ALL_ELECTRODES = ['F7', 'F8', 'AF3', 'AF4', 'FC5', 'FC6', 'F3',
                     'F4', 'T7', 'T8', 'O1', 'O2', 'P7', 'P8']
 
-ELECTRODES_2 = ['P7', 'AF3', 'O1']
+ELECTRODES = ['P7', 'AF3', 'O1']
 
 auth = HTTPBasicAuth()
 
@@ -59,6 +61,15 @@ user1 = {
 #users_collection.insert(user1)
 
 
+def convert_recording_to_pandas_dataframe(rec):
+    dict = {'timestamp': rec['timestamp']}
+    for electrode in rec['electrodes'].keys():
+        dict[electrode] = rec['electrodes'][electrode]
+    data = pd.DataFrame(dict)
+    data[['timestamp'] + rec['electrodes'].keys()]
+    return data
+
+
 @auth.get_password
 def get_password(username):
     user = users_collection.find({"username": username}, {"password": 1, "_id": 0})
@@ -69,10 +80,15 @@ def get_password(username):
     return password
 
 
+def find_recording_by_id(recording_id):
+    recording = recordings_collection.find({"_id": ObjectId(recording_id)})
+    return recording[0]
+
+
 def find_recordings_db(annotation=None):
     recordings_list = []
     if annotation is not None:
-        for recording in recordings_collection.find({"annotation": request.args.get("annotation")}, {"_id": 0}):
+        for recording in recordings_collection.find({"annotation": annotation}, {"_id": 0}):
             recordings_list.append(recording)
     else:
         for recording in recordings_collection.find():
@@ -218,14 +234,6 @@ def get_user_recordings(username):
     return jsonify({'user recordings': user_recordings})
 
 
-def convert_recording_to_pandas_dataframe(rec):
-    dict = {'timestamp': rec['timestamp']}
-    for electrode in rec['electrodes'].keys():
-        dict[electrode] = rec['electrodes'][electrode]
-    data = pd.DataFrame(dict)
-    data[['timestamp'] + rec['electrodes'].keys()]
-    return data
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
@@ -234,23 +242,48 @@ def allowed_file(filename):
 @app.route('/mobileeg/api/v1/recordings/timeseriesplot', methods=['GET'])
 @auth.login_required
 def create_timeseries_plot():
+    #TODO: To improve.
     recordings = find_recordings_db(request.args.get("annotation"))
     for rec in recordings:
         plt.figure(figsize=(6, 8))
-        print ELECTRODES_2
-        for electrode in ELECTRODES_2:
+        for electrode in ELECTRODES:
             if len(rec['timestamp']) == len(rec['electrodes'][electrode]):
                 plt.plot(rec['timestamp'], rec['electrodes'][electrode], 'b-')
-            #print rec['timestamp']
-            print electrode
-            #print rec
-            print rec['electrodes'][str(electrode)]
-            print rec['timestamp']
-            #print rec['electrodes']
         plt.xlabel("time")
         plt.ylabel("signal magnitude")
-        plt.savefig("timeseries2.png", dpi=150)
-        return send_from_directory("/", "timeseries2.png")
+        plt.savefig("test_timeseries.png", dpi=150)
+        return send_from_directory("/", "test_timeseries.png")
+
+
+@app.route('/mobileeg/api/v1/recordings/<string:recording_id>/spectrogram', methods=['GET'])
+@auth.login_required
+def create_spectrogram(recording_id):
+    electrode = request.args.get("electrode")
+    recording = find_recording_by_id(recording_id)
+    if electrode not in ELECTRODES or recording is None:
+        abort(404)
+    plt.figure(figsize=(6, 8))
+    specgram(recording['electrodes'][electrode])
+    plt.savefig("spectrogramP7.png", dpi=150)
+    return send_from_directory("/", "spectrogramP7.png")
+
+
+@app.route('/mobileeg/api/v1/recordings/peakfrequency', methods=['GET'])
+@auth.login_required
+def calculate_peak_frequency():
+    pass
+
+
+@app.route('/mobileeg/api/v1/recordings/powerspectraldensity', methods=['GET'])
+@auth.login_required
+def calculate_psd():
+    pass
+
+
+@app.route('/mobileeg/api/v1/recordings/magnitudespectrum', methods=['GET'])
+@auth.login_required
+def plot_magnitude_spectrum():
+    pass
 
 
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
