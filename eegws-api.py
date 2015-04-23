@@ -28,7 +28,7 @@ users_collection = db.users
 
 UPLOAD_FOLDER = 'uploaded_recordings'
 ALLOWED_EXTENSIONS = set(['bz2'])
-app = Flask(__name__, static_url_path='')
+app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 
@@ -255,7 +255,7 @@ def create_timeseries_plot():
         plt.xlabel("time")
         plt.ylabel("signal magnitude")
         plt.savefig("test_timeseries.png", dpi=150)
-        return send_from_directory("/", "test_timeseries.png")
+        return send_from_directory(app.root_path, "timeseries1.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/spectrogram', methods=['GET'])
@@ -268,7 +268,7 @@ def create_spectrogram(recording_id):
     plt.figure(figsize=(6, 8))
     specgram(recording['electrodes'][electrode])
     plt.savefig("spectrogramP7.png", dpi=150)
-    return send_from_directory("/", "spectrogramP7.png")
+    return send_from_directory(app.root_path, "spectrogramP7.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/peakfrequency', methods=['GET'])
@@ -299,7 +299,7 @@ def calculate_psd(recording_id):
     plt.xlabel("FREQUENCY")
     plt.ylabel("POWER SPECTRAL DENSITY")
     plt.savefig("psd.png", dpi=150)
-    return send_from_directory("/", "psd.png")
+    return send_from_directory(app.root_path, "psd.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/magnitudespectrum', methods=['GET'])
@@ -318,7 +318,7 @@ def plot_magnitude_spectrum(recording_id):
     plt.ylabel("POWER")
     plt.xlabel("FREQUENCY")
     plt.savefig("magnitude_spectrum.png", dpi=150)
-    return send_from_directory("/", "magnitude_spectrum.png")
+    return send_from_directory(app.root_path, "magnitude_spectrum.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
