@@ -325,8 +325,9 @@ def plot_magnitude_spectrum(recording_id):
     plt.plot(positive_freqs, magnitudes, 'g-')
     plt.ylabel("POWER")
     plt.xlabel("FREQUENCY")
-    plt.savefig("magnitude_spectrum.png", dpi=150)
-    return send_from_directory(app.root_path, "magnitude_spectrum.png")
+    plot_filename = "magnitude_spectrum_" + recording_id + "_" + electrode + ".png"
+    plt.savefig(plot_filename, dpi=150)
+    return send_from_directory(app.root_path, plot_filename)
 
 
 @app.route('/mobileeg/api/v1/recordings/upload', methods=['POST'])
