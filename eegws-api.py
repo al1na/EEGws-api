@@ -245,20 +245,22 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 
-@app.route('/mobileeg/api/v1/recordings/timeseriesplot', methods=['GET'])
+@app.route('/mobileeg/api/v1/recordings/<string:recording_id>/timeseriesplot', methods=['GET'])
 @auth.login_required
-def create_timeseries_plot():
+def create_timeseries_plot(recording_id):
     #TODO: To improve.
-    recordings = find_recordings_db(request.args.get("annotation"))
-    for rec in recordings:
-        plt.figure(figsize=(6, 8))
-        for electrode in ELECTRODES:
-            if len(rec['timestamp']) == len(rec['electrodes'][electrode]):
-                plt.plot(rec['timestamp'], rec['electrodes'][electrode], 'b-')
-        plt.xlabel("time")
-        plt.ylabel("signal magnitude")
-        plt.savefig("test_timeseries.png", dpi=150)
-        return send_from_directory(app.root_path, "timeseries1.png")
+    electrode = request.args.get("electrode")
+    recording = find_recording_by_id(recording_id)
+    if electrode not in ELECTRODES or recording is None:
+        abort(404)
+    plt.figure(figsize=(6, 8))
+    for electrode in recording['electrodes']:
+        if len(recording['timestamp']) == len(recording['electrodes'][electrode]):
+            plt.plot(recording['timestamp'], recording['electrodes'][electrode], 'b-')
+    plt.xlabel("time")
+    plt.ylabel("signal magnitude")
+    plt.savefig("test_timeseries.png", dpi=150)
+    return send_from_directory(app.root_path, "timeseries1.png")
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/spectrogram', methods=['GET'])
