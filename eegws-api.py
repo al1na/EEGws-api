@@ -259,8 +259,9 @@ def create_timeseries_plot(recording_id):
             plt.plot(recording['timestamp'], recording['electrodes'][electrode], 'b-')
     plt.xlabel("time")
     plt.ylabel("signal magnitude")
-    plt.savefig("test_timeseries.png", dpi=150)
-    return send_from_directory(app.root_path, "timeseries1.png")
+    plot_filename = "timeseries_" + recording_id + "_" + electrode + ".png"
+    plt.savefig(plot_filename, dpi=150)
+    return send_from_directory(app.root_path, plot_filename)
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/spectrogram', methods=['GET'])
@@ -272,8 +273,9 @@ def create_spectrogram(recording_id):
         abort(404)
     plt.figure(figsize=(6, 8))
     specgram(recording['electrodes'][electrode])
-    plt.savefig("spectrogramP7.png", dpi=150)
-    return send_from_directory(app.root_path, "spectrogramP7.png")
+    plot_filename = "spectrogram_" + recording_id + "_" + electrode + ".png"
+    plt.savefig(plot_filename, dpi=150)
+    return send_from_directory(app.root_path, plot_filename)
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/peakfrequency', methods=['GET'])
@@ -303,8 +305,9 @@ def calculate_psd(recording_id):
     plt.plot(psd[1], psd[0], 'b-')
     plt.xlabel("FREQUENCY")
     plt.ylabel("POWER SPECTRAL DENSITY")
-    plt.savefig("psd.png", dpi=150)
-    return send_from_directory(app.root_path, "psd.png")
+    plot_filename = "psd_" + recording_id + "_" + electrode + ".png"
+    plt.savefig(plot_filename, dpi=150)
+    return send_from_directory(app.root_path, plot_filename)
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/magnitudespectrum', methods=['GET'])
