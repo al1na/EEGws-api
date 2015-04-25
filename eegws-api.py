@@ -39,7 +39,7 @@ app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
 rec1 = {
         'timestamp': [1428262635, 1428262636, 1428262637, 1428262638, 1428262639],
         'device': 'emotiv',
-        'frequency': 128,
+        'sampling_rate': 128,
         'electrodes': {'AF3': [10, 20, 33, 12, 56],
                        'O1': [12, 57, 88, 32, 15],
                        'P7': [22, 47, 78, 62, 35]},
@@ -134,7 +134,7 @@ def create_recording():
     rec = {
             'timestamp': request.json['timestamp'],
             'device': request.json['device'],
-            'frequency': request.json['frequency'],
+            'sampling_rate': request.json['sampling_rate'],
             'electrodes': request.json['electrodes'],
             'quality': request.json['quality'],
             'gyroscope': request.json['gyroscope'],
