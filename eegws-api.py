@@ -355,7 +355,7 @@ def unpack_data(filepath):
 
 def load_data_as_json(decompressed_data):
     #  http://stackoverflow.com/questions/23344948/python-validate-and-format-json-files
-    json_data = json.load(decompressed_data)
+    json_data = json.loads(decompressed_data)
     return json_data
 
 
