@@ -20,7 +20,7 @@ ALL_ELECTRODES = ['AF3', 'AF4', 'AF7', 'AF8', 'AFz', 'C1', 'C2', 'C3', 'C4', 'C5
               'FC6', 'FCz', 'FP1', 'FP2', 'Fpz', 'FT7', 'FT8', 'Fz', 'Iz', 'Nz', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6',
               'P7', 'P8', 'PO3', 'PO4', 'PO7', 'PO8', 'POz', 'Pz', 'O1', 'O2', 'Oz', 'T7', 'T8', 'T9', 'T10', 'TP7',
               'TP8', 'TP9', 'TP10']
-ELECTRODES = ['P7', 'AF3', 'O1']
+ELECTRODES = ['P7', 'AF3', 'O1', 'P8', 'FC6']
 
 auth = HTTPBasicAuth()
 
@@ -272,7 +272,7 @@ def create_spectrogram(recording_id):
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     plt.figure(figsize=(6, 8))
-    specgram(recording['electrodes'][electrode])
+    specgram(recording['electrodes'][electrode], Fs=recording['sampling_rate'], NFFT=512)
     plot_filename = "spectrogram_" + recording_id + "_" + electrode + ".png"
     plt.savefig(plot_filename, dpi=150)
     return send_from_directory(app.root_path, plot_filename)
@@ -286,11 +286,12 @@ def calculate_peak_frequency(recording_id):
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     fourier = np.fft.fft(recording['electrodes'][electrode])
-    freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['frequency']))
+    freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['sampling_rate']))
     magnitudes = abs(fourier[np.where(freqs >= 0)])
     peak_frequency = np.argmax(magnitudes)
     print peak_frequency
     return str(peak_frequency)
+
 
 
 @app.route('/mobileeg/api/v1/recordings/<string:recording_id>/powerspectraldensity', methods=['GET'])
@@ -300,7 +301,9 @@ def calculate_psd(recording_id):
     recording = find_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
-    psd = mlab.psd(recording['electrodes'][electrode], Fs=recording['frequency'])
+    #print recording['sampling_rate']
+    #print recording['electrodes'][electrode]
+    psd = mlab.psd(recording['electrodes'][electrode], Fs=recording['sampling_rate'], NFFT=128)
     plt.figure(figsize=(6, 8))
     plt.plot(psd[1], psd[0], 'b-')
     plt.xlabel("FREQUENCY")
@@ -318,7 +321,7 @@ def plot_magnitude_spectrum(recording_id):
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     fourier = np.fft.fft(recording['electrodes'][electrode])
-    freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['frequency']))
+    freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['sampling_rate']))
     positive_freqs = freqs[np.where(freqs >= 0)]
     magnitudes = abs(fourier[np.where(freqs >= 0)])
     plt.figure(figsize=(6, 8))

@@ -52,6 +52,6 @@ print("The dominating frequency is " + str(peak_frequency) + " Hz")
 # spectrogram
 plt.subplot(411)
 specgram(y)
-plt.savefig("spectrogram.jpg", dpi=150)
+plt.savefig("test_spectrogram.jpg", dpi=150)
 
 
