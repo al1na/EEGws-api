@@ -285,10 +285,35 @@ def calculate_peak_frequency(recording_id):
     recording = find_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
-    fourier = np.fft.fft(recording['electrodes'][electrode])
+    timpi = [float(x) for x in recording['timestamp']]
+    x = np.array([timpi, recording['electrodes'][electrode]])
+    print "xT "
+    print x.T.shape
+    print x.T
+    df = pd.DataFrame(x.T)
+    print df
+    print "df shape " + str(df.shape[0]) + " " + str(type(df))
+    fourier = np.fft.fft(df, axis=0)
+    print str(type(fourier))
     freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['sampling_rate']))
-    magnitudes = abs(fourier[np.where(freqs >= 0)])
+    dfspectrum = pd.DataFrame(fourier, index=freqs, columns=['Time', 'AF3'])
+    print dfspectrum
+    #print str(x.T.shape[0]) + "x T shape"
+    #print str(len(recording['electrodes'][electrode])) + "rec el "
+    #print str(x.shape[0]) + "x shape"
+    #freqs = np.fft.fftfreq(x.shape[0], 1/float(recording['sampling_rate']))
+    magnitudes = abs(fourier[np.where(freqs >= 0.1)])
+    indices = dfspectrum.index >= 0.1
+    spectrummags = np.abs(dfspectrum.ix[indices, 'AF3'])
+    print spectrummags
+    peak2 = np.argmax(spectrummags)
+    print peak2
     peak_frequency = np.argmax(magnitudes)
+    print fourier
+    print fourier[9.6436442989634479]
+    print fourier[peak_frequency]
+    print magnitudes
+    #print magnitudes.argmax()
     print peak_frequency
     return str(peak_frequency)
 
