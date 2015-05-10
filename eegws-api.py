@@ -330,10 +330,23 @@ def calculate_psd(recording_id):
     #print recording['electrodes'][electrode]
     psd = mlab.psd(recording['electrodes'][electrode], Fs=recording['sampling_rate'], NFFT=128)
     plt.figure(figsize=(6, 8))
-    plt.plot(psd[1], psd[0], 'b-')
+    #plt.plot(psd[1], psd[0], 'b-')
+    plt.plot(psd[1][4:], psd[0][4:], 'b-')
+    print "psd freqs index 4 up"
+    print psd[1][4:]
+    print "psd power index 4 up"
+    print psd[0][4:]
+    freqs = psd[1]
+    print "freqs len " + str(len(freqs))
+    print freqs
+    freqsgtone = np.where(freqs >= 1)
+    print "freqsgtone len " + str(len(freqsgtone))
+    print freqsgtone
+    print "power len " + str(len(psd[0]))
+    print psd[0]
     plt.xlabel("FREQUENCY")
     plt.ylabel("POWER SPECTRAL DENSITY")
-    plot_filename = "psd_" + recording_id + "_" + electrode + ".png"
+    plot_filename = "psd_" + recording_id + "_" + electrode + str(datetime.datetime.now().isoformat()) + ".png"
     plt.savefig(plot_filename, dpi=150)
     return send_from_directory(app.root_path, plot_filename)
 
@@ -347,13 +360,13 @@ def plot_magnitude_spectrum(recording_id):
         abort(404)
     fourier = np.fft.fft(recording['electrodes'][electrode])
     freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['sampling_rate']))
-    positive_freqs = freqs[np.where(freqs >= 0)]
-    magnitudes = abs(fourier[np.where(freqs >= 0)])
+    positive_freqs = freqs[np.where(freqs >= 1)]
+    magnitudes = abs(fourier[np.where(freqs >= 1)])
     plt.figure(figsize=(6, 8))
     plt.plot(positive_freqs, magnitudes, 'g-')
     plt.ylabel("POWER")
     plt.xlabel("FREQUENCY")
-    plot_filename = "magnitude_spectrum_" + recording_id + "_" + electrode + ".png"
+    plot_filename = "magnitude_spectrum_" + recording_id + "_" + electrode + str(datetime.datetime.now().isoformat()) + ".png"
     plt.savefig(plot_filename, dpi=150)
     return send_from_directory(app.root_path, plot_filename)
 
