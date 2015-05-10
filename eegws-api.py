@@ -106,16 +106,25 @@ def find_recordings_db(annotation=None):
 @app.route('/mobileeg/api/v1/recordings', methods=['GET'])
 @auth.login_required
 def get_recordings():
-    #TODO: to provide only the public recordings (check if public=True for the user)
     recordings_list = []
     if request.args.get("annotation"):
         for recording in recordings_collection.find({"annotation": request.args.get("annotation")}, {"_id": 0}):
-            recordings_list.append(recording)
+            if is_public_user(recording['userid']):
+                recordings_list.append(recording)
     else:
         for recording in recordings_collection.find():
-            recording.pop('_id')
-            recordings_list.append(recording)
+            if is_public_user(recording['userid']):
+                recording.pop('_id')
+                recordings_list.append(recording)
     return jsonify({'recordings': recordings_list})
+
+
+def is_public_user(userid):
+    user = users_collection.find({"userid": userid})
+    is_public = False
+    for u in user:
+        is_public = u.get('public')
+    return is_public
 
 
 def find_userid_db(username):
@@ -226,6 +235,8 @@ def update_user():
 @auth.login_required
 def get_user_recordings(username):
     user = users_collection.find({"username": username, "public": True})
+    if user.count() == 0:
+        abort(404)
     user_id = user[0]['userid']
     user_recordings = []
     if request.args.get("annotation"):
@@ -328,7 +339,7 @@ def calculate_psd(recording_id):
         abort(404)
     #print recording['sampling_rate']
     #print recording['electrodes'][electrode]
-    psd = mlab.psd(recording['electrodes'][electrode], Fs=recording['sampling_rate'], NFFT=128)
+    psd = mlab.psd(recording['electrodes'][electrode], Fs=recording['sampling_rate'], NFFT=2048)
     plt.figure(figsize=(6, 8))
     #plt.plot(psd[1], psd[0], 'b-')
     plt.plot(psd[1][4:], psd[0][4:], 'b-')
@@ -358,10 +369,13 @@ def plot_magnitude_spectrum(recording_id):
     recording = find_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
+    min_freq = int(request.args.get("minfreq"))
+    if min_freq is None:
+        min_freq = 1
     fourier = np.fft.fft(recording['electrodes'][electrode])
     freqs = np.fft.fftfreq(len(recording['electrodes'][electrode]), 1/float(recording['sampling_rate']))
-    positive_freqs = freqs[np.where(freqs >= 1)]
-    magnitudes = abs(fourier[np.where(freqs >= 1)])
+    positive_freqs = freqs[np.where(freqs >= min_freq)]
+    magnitudes = abs(fourier[np.where(freqs >= min_freq)])
     plt.figure(figsize=(6, 8))
     plt.plot(positive_freqs, magnitudes, 'g-')
     plt.ylabel("POWER")
