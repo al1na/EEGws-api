@@ -86,9 +86,17 @@ def get_password(username):
     return password
 
 
-def find_recording_by_id(recording_id):
+def find_public_recording_by_id(recording_id):
     recording = recordings_collection.find({"_id": ObjectId(recording_id)})
-    return recording[0]
+    if recording.count() == 1:
+        if is_public_user(recording[0]['userid']):
+            return recording[0]
+        else:
+            return None
+    else:
+        """Either there is no recording with the given id, either there are multiple (should be impossible as
+         mongo maintains unique ids)"""
+        return None
 
 
 def find_recordings_db(annotation=None):
@@ -103,20 +111,39 @@ def find_recordings_db(annotation=None):
     return recordings_list
 
 
+def enhance_recording_with_uri(recording):
+    new_rec = {}
+    for field in recording:
+        if field == '_id':
+            new_rec['uri'] = url_for('get_recording', recording_id=recording['_id'], _external=True)
+        else:
+            new_rec[field] = recording[field]
+    return new_rec
+
+
 @app.route('/mobileeg/api/v1/recordings', methods=['GET'])
 @auth.login_required
 def get_recordings():
     recordings_list = []
     if request.args.get("annotation"):
-        for recording in recordings_collection.find({"annotation": request.args.get("annotation")}, {"_id": 0}):
+        for recording in recordings_collection.find({"annotation": request.args.get("annotation")}):
             if is_public_user(recording['userid']):
                 recordings_list.append(recording)
     else:
         for recording in recordings_collection.find():
             if is_public_user(recording['userid']):
-                recording.pop('_id')
                 recordings_list.append(recording)
-    return jsonify({'recordings': recordings_list})
+    return jsonify({'recordings': [enhance_recording_with_uri(rec) for rec in recordings_list]})
+
+
+@app.route('/mobileeg/api/v1/recordings/<string:recording_id>', methods=['GET'])
+@auth.login_required
+def get_recording(recording_id):
+    recording = find_public_recording_by_id(recording_id)
+    if recording is None:
+        abort(404)
+    recording.pop('_id')
+    return jsonify({'recording': recording})
 
 
 def is_public_user(userid):
@@ -132,6 +159,7 @@ def find_userid_db(username):
     for u in user:
         userid = u.get('userid')
     return userid
+
 
 @app.route('/mobileeg/api/v1/recordings', methods=['POST'])
 @auth.login_required
@@ -153,8 +181,7 @@ def create_recording():
             'userid': userid
             }
     recordings_collection.insert(rec)
-    rec.pop('_id')
-    return jsonify({'recording': rec}), 201
+    return jsonify({'recording': enhance_recording_with_uri(rec)}), 201
 
 
 @app.route('/mobileeg/api/v1/users', methods=['GET'])
@@ -248,7 +275,7 @@ def get_user_recordings(username):
     else:
         for recording in recordings_collection.find({"userid": user_id}, {"_id": 0}):
             user_recordings.append(recording)
-    return jsonify({'user recordings': user_recordings})
+    return jsonify({'user recordings': [enhance_recording_with_uri(rec) for rec in user_recordings]})
 
 
 def allowed_file(filename):
@@ -261,7 +288,7 @@ def allowed_file(filename):
 def create_timeseries_plot(recording_id):
     #TODO: To improve.
     electrode = request.args.get("electrode")
-    recording = find_recording_by_id(recording_id)
+    recording = find_public_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     plt.figure(figsize=(6, 8))
@@ -279,7 +306,7 @@ def create_timeseries_plot(recording_id):
 @auth.login_required
 def create_spectrogram(recording_id):
     electrode = request.args.get("electrode")
-    recording = find_recording_by_id(recording_id)
+    recording = find_public_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     plt.figure(figsize=(6, 8))
@@ -293,7 +320,7 @@ def create_spectrogram(recording_id):
 @auth.login_required
 def calculate_peak_frequency(recording_id):
     electrode = request.args.get("electrode")
-    recording = find_recording_by_id(recording_id)
+    recording = find_public_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     timpi = [float(x) for x in recording['timestamp']]
@@ -334,7 +361,7 @@ def calculate_peak_frequency(recording_id):
 @auth.login_required
 def calculate_psd(recording_id):
     electrode = request.args.get("electrode")
-    recording = find_recording_by_id(recording_id)
+    recording = find_public_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     #print recording['sampling_rate']
@@ -366,7 +393,7 @@ def calculate_psd(recording_id):
 @auth.login_required
 def plot_magnitude_spectrum(recording_id):
     electrode = request.args.get("electrode")
-    recording = find_recording_by_id(recording_id)
+    recording = find_public_recording_by_id(recording_id)
     if electrode not in ELECTRODES or recording is None:
         abort(404)
     min_freq = int(request.args.get("minfreq"))
