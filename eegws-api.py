@@ -422,7 +422,7 @@ def handle_uploaded_file():
             decompressed_data = unpack_data(filepath)
             json_data = load_data_as_json(decompressed_data)
             rec = insert_recording(json_data, auth.username())
-            return jsonify(rec), 201
+            return jsonify(enhance_recording_with_uri(rec)), 201
 
 
 def unpack_data(filepath):
